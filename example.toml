@@ -1,0 +1,165 @@
+# beacon example config — every provider type, fully commented.
+#
+# Secrets rule: any key ending in `File` is a path to a file that is read at
+# poll time (so rotation works). Inline secrets are never accepted. All *File
+# paths are checked for readability at startup.
+
+[server]
+# Address to bind. No built-in auth: bind your Tailscale IP, or keep
+# localhost and expose via `tailscale serve`.
+listen = "127.0.0.1:8383"
+# A provider whose last successful poll is older than this is flagged STALE
+# in the UI (per-provider `staleAfter` overrides this).
+staleAfter = "15m"
+# How often the page re-fetches /api/status.
+refreshSeconds = 30
+# Small label in the header, e.g. "tailnet · start.ts.net".
+hostLabel = "tailnet · start.ts.net"
+
+# ── Quick-launch links (optional) ─────────────────────────────────────────
+# Icons: shield filter sync hdd bell image activity cpu globe search
+#        terminal book music mail home file external
+[[links]]
+label = "Grafana"
+url = "https://grafana.your-tailnet.ts.net"
+icon = "activity"
+
+[[links]]
+label = "Immich"
+url = "https://immich.your-tailnet.ts.net"
+icon = "image"
+
+# ── Command-bar search engines (optional) ─────────────────────────────────
+# The query is URL-encoded and appended to `url`.
+[[engines]]
+name = "SearXNG"
+url = "https://searxng.your-tailnet.ts.net/search?q="
+
+[[engines]]
+name = "Startpage"
+url = "https://www.startpage.com/sp/search?query="
+
+# ── Providers ──────────────────────────────────────────────────────────────
+# Common keys for every provider:
+#   id         unique identifier (required)
+#   type       provider type (required)
+#   title      card title (default: id)
+#   subtitle   small eyebrow under the title (default: type)
+#   link       makes the card and health pill link out (defaults to the
+#              provider's own `url` when it has one)
+#   icon       overrides the type's default icon (names above)
+#   interval   poll interval (default "1m")
+#   staleAfter overrides server.staleAfter for this provider
+
+# restic — shells out to `restic snapshots --json`; needs restic on PATH.
+# ok while the newest snapshot is younger than staleAfter, error otherwise.
+[[providers]]
+id = "backups"
+type = "restic"
+title = "Backups"
+interval = "15m"
+repository = "/srv/backup/restic"          # any restic repo URL works
+passwordFile = "/run/credentials/beacon.service/restic-pw"
+staleAfter = "26h"                         # snapshot age limit (and staleness window)
+# extraArgs = ["--tag", "nightly"]         # appended to the restic call
+
+# syncthing — REST API. ok only if all folders are idle and in sync, no
+# system errors, and all expected (non-paused) devices are connected.
+[[providers]]
+id = "sync"
+type = "syncthing"
+title = "Syncthing"
+interval = "1m"
+url = "http://127.0.0.1:8384"
+apiKeyFile = "/run/credentials/beacon.service/syncthing-api"
+
+# disk — statfs on each mount; warn/error at used-percent thresholds.
+[[providers]]
+id = "storage"
+type = "disk"
+title = "Storage"
+interval = "5m"
+mounts = ["/", "/data"]
+warnPercent = 80
+errorPercent = 92
+
+# ntfy — shows the topic's recent cached messages as a feed.
+# Status only reflects reachability of the server.
+[[providers]]
+id = "alerts"
+type = "ntfy"
+title = "Alerts"
+interval = "30s"
+url = "https://ntfy.example.com"
+topic = "homelab"
+limit = 6            # messages shown (default 8)
+since = "24h"        # lookback window (default "24h")
+
+# adguard — AdGuard Home control API with HTTP basic auth.
+[[providers]]
+id = "dns"
+type = "adguard"
+title = "AdGuard Home"
+interval = "1m"
+url = "http://127.0.0.1:3000"
+usernameFile = "/run/credentials/beacon.service/adguard-user"
+passwordFile = "/run/credentials/beacon.service/adguard-pw"
+
+# ── Generic providers — add most future services with config only ─────────
+
+# http-json — GET a URL, extract JSON fields by dotted path (arrays are
+# indexed numerically: "results.0.value").
+#
+# statusFrom maps one extracted value to a status, either by equality or by
+# numeric thresholds (warnAbove / errorAbove / warnBelow / errorBelow).
+# summaryTemplate substitutes {dotted.path} placeholders.
+# metrics maps display labels to dotted paths.
+[[providers]]
+id = "fitness"
+type = "http-json"
+title = "Fitness"
+interval = "10m"
+url = "https://fitness.example.com/api/summary"
+# headers = { X-Custom = "value" }
+bearerTokenFile = "/run/credentials/beacon.service/fitness-token"
+summaryTemplate = "resting HR {heart.resting} bpm · {steps.today} steps"
+[providers.statusFrom]
+path = "sync.hoursAgo"
+warnAbove = 24
+errorAbove = 48
+[providers.metrics]
+"resting hr" = "heart.resting"
+"steps" = "steps.today"
+
+# command — run a command, parse stdout as JSON or with a regex (named
+# capture groups become extractable fields). Same statusFrom / summary /
+# metrics rules as http-json.
+[[providers]]
+id = "zpool"
+type = "command"
+title = "ZFS pool"
+interval = "5m"
+command = ["zpool", "list", "-H", "-o", "health,cap", "tank"]
+parse = "regex"
+regex = '(?P<health>\w+)\s+(?P<cap>\d+)%'
+summaryTemplate = "tank {health} · {cap}% used"
+[providers.statusFrom]
+path = "health"
+equals = "ONLINE"
+
+# http-health — pure up/down from an HTTP status code…
+[[providers]]
+id = "immich"
+type = "http-health"
+title = "Immich"
+interval = "1m"
+url = "https://immich.your-tailnet.ts.net/api/server/ping"
+expectStatus = 200
+
+# …or a plain TCP connect.
+[[providers]]
+id = "ssh"
+type = "http-health"
+title = "SSH"
+interval = "1m"
+address = "127.0.0.1:22"

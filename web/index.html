@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>beacon</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 2.5v5.5c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V5.5z"></path></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z"></path></symbol>
+  <symbol id="i-sync" viewBox="0 0 24 24"><path d="M4.5 9a8 8 0 0 1 13.4-3.3L20 8"></path><path d="M4 4v4h4"></path><path d="M19.5 15a8 8 0 0 1-13.4 3.3L4 16"></path><path d="M20 20v-4h-4"></path></symbol>
+  <symbol id="i-hdd" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="11" rx="1.5"></rect><path d="M6 16v3M18 16v3"></path><circle cx="16.5" cy="10.5" r="1.2"></circle></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6z"></path><path d="M10 20a2 2 0 0 0 4 0"></path></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="8.5" cy="9.5" r="1.5"></circle><path d="M4 18l5-5 4 4 3-3 4 4"></path></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l2.5-7 4 14 2.5-7H21"></path></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"></rect><rect x="9.5" y="9.5" width="5" height="5" rx="0.5"></rect><path d="M9 3v2M15 3v2M9 19v2M15 19v2M3 9h2M3 15h2M19 9h2M19 15h2"></path></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18"></path><path d="M12 3c2.7 3 2.7 15 0 18M12 3c-2.7 3-2.7 15 0 18"></path></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"></path></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 13.5A8 8 0 1 1 10.5 4a6.5 6.5 0 0 0 9.5 9.5z"></path></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6"></path><path d="M20 4L11 13"></path><path d="M18 14v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"></path></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24"><path d="M5 8l4 4-4 4"></path><path d="M12 16h7"></path></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4h13a1 1 0 0 1 1 1v15H6a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1z"></path><path d="M4 18a2 2 0 0 1 2-2h13"></path></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V6l11-2v12"></path><circle cx="6" cy="18" r="2.5"></circle><circle cx="17" cy="16" r="2.5"></circle></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M4 7l8 6 8-6"></path></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"></path><path d="M6 10v9h12v-9"></path></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"></path><path d="M14 3v4h4"></path></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5"></path><path d="M12 16h.01"></path></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M18.4 5.6a9 9 0 1 1-12.8 0"></path><path d="M12 2v9"></path></symbol>
+</defs></svg>
+
+<div id="root" data-theme="light">
+  <div id="verdict-bar"></div>
+  <div class="wrap">
+
+    <header class="hdr">
+      <div class="hdr-left">
+        <span class="brand nk-mono">nk</span>
+        <span id="verdict" class="verdict v-none">
+          <span class="dot"></span>
+          <span id="verdict-label" class="verdict-label nk-mono">loading</span>
+        </span>
+        <span id="verdict-detail" class="verdict-detail nk-mono"></span>
+      </div>
+      <div class="hdr-right">
+        <span id="host" class="host nk-mono"></span>
+        <button id="theme-btn" title="Toggle theme">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use id="theme-icon" href="#i-moon"></use></svg>
+        </button>
+      </div>
+    </header>
+
+    <div id="banner" class="banner" hidden>
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-alert"></use></svg>
+      <span>beacon is unreachable — showing last known data</span>
+    </div>
+
+    <div class="cmd-wrap">
+      <div class="cmd">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><use href="#i-search"></use></svg>
+        <input id="q" placeholder="Search the web or jump to a service…" spellcheck="false" autocomplete="off">
+        <div id="engines"></div>
+        <span class="kbd nk-mono">/</span>
+      </div>
+      <div id="results" class="results" hidden></div>
+    </div>
+
+    <div id="pills" class="pills"></div>
+
+    <div id="quick" class="quick" hidden>
+      <span class="quick-label nk-mono">Launch</span>
+      <div id="quick-links"></div>
+    </div>
+
+    <div id="grid" class="grid"></div>
+
+  </div>
+</div>
+</body>
+</html>

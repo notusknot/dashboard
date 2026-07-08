@@ -7,6 +7,10 @@ let
   cfg = config.services.beacon;
   settingsFormat = pkgs.formats.toml { };
   configFile = settingsFormat.generate "beacon.toml" cfg.settings;
+
+  # Links + http-health providers discovered from the rest of the NixOS config.
+  # Lazy — only forced when discovery is enabled in the config block below.
+  discovered = import ./discovery.nix { inherit config lib; cfg = cfg.discover; };
 in
 {
   options.services.beacon = {
@@ -91,13 +95,94 @@ in
         Nix store.
       '';
     };
+
+    discover = {
+      enable = lib.mkEnableOption ''
+        auto-discovery: read enabled services from the rest of your NixOS
+        config and add a launch link plus an http-health liveness card for
+        each known one, so beacon tracks your services without hand-listing
+        them. Discovered entries are appended to {option}`settings`'';
+
+      domain = lib.mkOption {
+        type = lib.types.str;
+        default = "";
+        example = "start.example.ts.net";
+        description = ''
+          Base domain for discovered links. Each service links to
+          `<scheme>://<subdomain>.<domain>` — its reverse-proxy hostname.
+          Required when {option}`discover.enable` is set.
+        '';
+      };
+
+      scheme = lib.mkOption {
+        type = lib.types.str;
+        default = "https";
+        description = "URL scheme for discovered service links.";
+      };
+
+      interval = lib.mkOption {
+        type = lib.types.str;
+        default = "1m";
+        description = "Poll interval for the generated http-health cards.";
+      };
+
+      healthTarget = lib.mkOption {
+        type = lib.types.enum [ "local" "link" ];
+        default = "local";
+        description = ''
+          Where a generated health check connects. `local` dials
+          `127.0.0.1:<port>` on this host — robust, and independent of the
+          reverse proxy or any login redirect. `link` checks the public
+          `<scheme>://<subdomain>.<domain>` URL instead.
+        '';
+      };
+
+      exclude = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        example = [ "grafana" ];
+        description = ''
+          Catalog keys to skip — drop a discovered service, or resolve a
+          collision with a hand-written `links`/`providers` entry.
+        '';
+      };
+
+      extraServices = lib.mkOption {
+        type = lib.types.listOf (lib.types.attrsOf lib.types.anything);
+        default = [ ];
+        example = lib.literalExpression ''
+          [ { key = "octoprint"; title = "OctoPrint"; icon = "cpu"; port = 5000; } ]
+        '';
+        description = ''
+          Extra catalog entries for services beacon doesn't ship, or
+          third-party modules. Same shape as the built-in catalog: `key`
+          (required — the provider id and default subdomain), `title`,
+          `icon` (an existing dashboard icon name), `port` (for the local
+          health check), and optional `enable` (default true), `subdomain`,
+          `linkUrl`, `healthUrl`.
+        '';
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [{
+      assertion = !cfg.discover.enable || cfg.discover.domain != "";
+      message = "services.beacon.discover.domain must be set when discover.enable is true.";
+    }];
+
     services.beacon.settings.server.listen =
       lib.mkDefault "${cfg.listenAddress}:${toString cfg.port}";
 
     networking.firewall.allowedTCPPorts = lib.mkIf cfg.openFirewall [ cfg.port ];
+
+    # Auto-discovery: append generated links/cards to the rendered config.
+    # mkAfter places them after any hand-written entries; the TOML list type
+    # concatenates the definitions.
+    services.beacon.settings.links =
+      lib.mkIf cfg.discover.enable (lib.mkAfter discovered.links);
+    services.beacon.settings.providers =
+      lib.mkIf cfg.discover.enable (lib.mkAfter discovered.providers);
 
     systemd.services.beacon = {
       description = "beacon status dashboard";

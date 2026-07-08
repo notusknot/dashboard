@@ -205,6 +205,53 @@ The service runs hardened: `DynamicUser` (unless you set `user`/`group`),
 restricted syscalls and address families. If you monitor mounts under
 `/home`, override `ProtectHome`.
 
+### Auto-discovery from your NixOS config
+
+Turn on `discover` and beacon reads the rest of your NixOS config at
+rebuild time: every known service you've enabled gets a launch link plus an
+`http-health` liveness card, with no duplicated ports to keep in sync. When
+you enable a new service and `nixos-rebuild`, it shows up automatically.
+
+```nix
+services.beacon = {
+  enable = true;
+  discover.enable = true;
+  discover.domain = "start.example.ts.net";  # links go to <name>.<domain>
+};
+```
+
+Enabling `services.grafana` and `services.adguardhome` then yields links to
+`https://grafana.start.example.ts.net` / `https://adguard.start.example.ts.net`
+and two health cards. Discovered entries are **appended** to whatever you
+write by hand in `settings.links` / `settings.providers`.
+
+How it works and its knobs:
+
+- Discovery is a curated catalog (grafana, prometheus, adguardhome,
+  syncthing, jellyfin, home-assistant, immich, paperless, forgejo, gitea,
+  vaultwarden, radarr/sonarr/prowlarr/bazarr, miniflux, audiobookshelf,
+  photoprism, transmission, uptime-kuma). A service not in the catalog is
+  simply not discovered — it needs a one-line `discover.extraServices` entry.
+- Links point at the reverse-proxy subdomain `<scheme>://<name>.<domain>`
+  (`discover.scheme` defaults to `https`). The health check, by contrast,
+  dials the service **locally** (`127.0.0.1:<port>`, `discover.healthTarget =
+  "local"`) so it's a real liveness check independent of the proxy or a login
+  redirect; set `healthTarget = "link"` to check the public URL instead.
+- `discover.exclude = [ "grafana" ]` drops an entry (also the way to resolve a
+  name collision with a hand-written link/provider).
+- `discover.extraServices` adds services beacon doesn't ship:
+
+  ```nix
+  discover.extraServices = [
+    { key = "octoprint"; title = "OctoPrint"; icon = "cpu"; port = 5000; }
+    # optional per-entry: enable, subdomain, linkUrl, healthUrl
+  ];
+  ```
+
+Only generic reachability is auto-configured. Rich providers (restic,
+syncthing folders, adguard stats, …) need secrets, so wire those by hand in
+`settings.providers` as above.
+
 ### Secrets: systemd credentials
 
 Wire secrets with `LoadCredential` so they never enter the Nix store. The

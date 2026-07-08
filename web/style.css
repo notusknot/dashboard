@@ -106,12 +106,20 @@
 
 /* ── Base ──────────────────────────────────────────────────────────────── */
 html, body { margin: 0; }
+/* html carries the theme too (set pre-paint) so the standalone overscroll area
+ * and iOS status bar match the app instead of flashing white. */
+html { background: var(--nk-bg); -webkit-text-size-adjust: 100%; }
+body { overscroll-behavior-y: none; }
+/* Native-feel touch: no grey tap flash, no long-press callout on chrome. */
+* { -webkit-tap-highlight-color: transparent; }
+button, a, .pill { -webkit-touch-callout: none; }
 ::selection { background: rgba(231, 194, 75, 0.35); }
 input::placeholder { color: var(--nk-faint); }
 .nk-mono { font-family: var(--nk-font-mono); font-feature-settings: 'tnum' 1; }
 
 #root {
 	min-height: 100vh;
+	min-height: 100dvh;
 	background: var(--nk-bg);
 	font-family: var(--nk-font-ui);
 	color: var(--nk-ink);
@@ -123,7 +131,11 @@ input::placeholder { color: var(--nk-faint); }
 #verdict-bar.v-fail { background: var(--nk-danger); }
 #verdict-bar.v-none { background: var(--nk-line); }
 
-.wrap { max-width: 1320px; margin: 0 auto; padding: 20px 22px 56px; }
+.wrap {
+	max-width: 1320px; margin: 0 auto;
+	/* Respect the notch/rounded corners/home indicator in standalone mode. */
+	padding: 20px max(22px, env(safe-area-inset-right)) calc(56px + env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left));
+}
 
 /* ── Header ────────────────────────────────────────────────────────────── */
 .hdr { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }

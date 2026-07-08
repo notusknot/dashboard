@@ -320,6 +320,11 @@ let theme = (() => {
 function applyTheme() {
   root.dataset.theme = theme;
   $('theme-icon').setAttribute('href', theme === 'dark' ? '#i-sun' : '#i-moon');
+  // Keep <html>, the standalone overscroll area, and the iOS status bar in sync.
+  const bg = theme === 'dark' ? '#0d1a15' : '#f4f2ec';
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.style.background = bg;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg);
 }
 $('theme-btn').addEventListener('click', () => {
   theme = theme === 'dark' ? 'light' : 'dark';
@@ -350,4 +355,14 @@ try { data = JSON.parse(localStorage.getItem('beacon-data')); } catch { /* ignor
 if (data) render();
 refresh();
 setInterval(() => { if (data && !document.hidden) render(); }, 30000); // keep ages ticking
-input.focus();
+
+// Re-poll the moment the app is foregrounded (standalone apps resume, not reload).
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+
+// Focusing the search field on load steals the viewport on mobile (keyboard pops
+// up); only auto-focus where there's a real keyboard.
+if (matchMedia('(pointer: fine)').matches) input.focus();
+
+// App shell: cache for instant, offline-capable launches.
+if ('serviceWorker' in navigator)
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));

@@ -3,6 +3,7 @@ package server
 
 import (
 	"encoding/json"
+	"mime"
 	"net/http"
 	"time"
 
@@ -10,6 +11,12 @@ import (
 	"beacon/internal/provider"
 	"beacon/web"
 )
+
+func init() {
+	// FileServerFS picks Content-Type from the extension; .webmanifest isn't a
+	// built-in so register it, otherwise the manifest is served as octet-stream.
+	mime.AddExtensionType(".webmanifest", "application/manifest+json")
+}
 
 // Source supplies the latest provider entries; the Runner in live mode, a
 // fabricated set in --demo mode.

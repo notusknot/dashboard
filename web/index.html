@@ -2,9 +2,37 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>beacon</title>
-<link rel="icon" href="data:,">
+
+<!-- PWA / installable, and standalone launch on iOS Safari -->
+<meta name="theme-color" content="#f4f2ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="beacon">
+<meta name="application-name" content="beacon">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<!-- Apply the saved/system theme before first paint so a standalone launch
+     never flashes the wrong background (feels native, not web). -->
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem('beacon-theme');
+      if (t !== 'dark' && t !== 'light')
+        t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      var bg = t === 'dark' ? '#0d1a15' : '#f4f2ec';
+      document.documentElement.dataset.theme = t;
+      document.documentElement.style.background = bg;
+      var m = document.querySelector('meta[name="theme-color"]');
+      if (m) m.setAttribute('content', bg);
+    } catch (e) { /* private mode */ }
+  })();
+</script>
+
 <link rel="stylesheet" href="style.css">
 <script type="module" src="app.js"></script>
 </head>

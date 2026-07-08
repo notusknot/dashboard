@@ -105,6 +105,24 @@ url = "http://127.0.0.1:3000"
 usernameFile = "/run/credentials/beacon.service/adguard-user"
 passwordFile = "/run/credentials/beacon.service/adguard-pw"
 
+# openibex — live training-load dashboard from an OpenIbex instance's
+# read-only HTTP API (/api/v1). Enable it in OpenIbex by setting API_TOKEN,
+# then point apiTokenFile at that same token (sent as `Authorization: Bearer`).
+# Shows form (TSB), fitness (CTL) with an 84-day sparkline, fatigue (ATL),
+# weekly TSS and a readiness pill. https://github.com/notusknot/openibex
+[[providers]]
+id = "fitness"
+type = "openibex"
+title = "OpenIbex"
+subtitle = "training load"
+icon = "activity"
+interval = "15m"
+url = "https://openibex.your-tailnet.ts.net"
+apiTokenFile = "/run/credentials/beacon.service/openibex-token"
+# Optional training thresholds (defaults shown) — when to flip the card to warn:
+# formWarnBelow = -30        # form (TSB) this low means deep fatigue — ease off
+# monotonyWarnAbove = 2.0    # monotonous training raises injury/illness risk
+
 # ── Generic providers — add most future services with config only ─────────
 
 # http-json — GET a URL, extract JSON fields by dotted path (arrays are
@@ -115,21 +133,21 @@ passwordFile = "/run/credentials/beacon.service/adguard-pw"
 # summaryTemplate substitutes {dotted.path} placeholders.
 # metrics maps display labels to dotted paths.
 [[providers]]
-id = "fitness"
+id = "weather"
 type = "http-json"
-title = "Fitness"
+title = "Weather"
 interval = "10m"
-url = "https://fitness.example.com/api/summary"
+url = "https://api.example.com/weather/current"
 # headers = { X-Custom = "value" }
-bearerTokenFile = "/run/credentials/beacon.service/fitness-token"
-summaryTemplate = "resting HR {heart.resting} bpm · {steps.today} steps"
+# bearerTokenFile = "/run/credentials/beacon.service/weather-token"
+summaryTemplate = "{temp.c}°C · {wind.kph} km/h wind"
 [providers.statusFrom]
-path = "sync.hoursAgo"
-warnAbove = 24
-errorAbove = 48
+path = "aqi"
+warnAbove = 100
+errorAbove = 150
 [providers.metrics]
-"resting hr" = "heart.resting"
-"steps" = "steps.today"
+"temperature" = "temp.c"
+"humidity" = "humidity.pct"
 
 # command — run a command, parse stdout as JSON or with a regex (named
 # capture groups become extractable fields). Same statusFrom / summary /

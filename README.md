@@ -131,6 +131,7 @@ Common provider keys: `id` (unique, required), `type` (required), `title`,
 | `disk` | `mounts` | `warnPercent` (80), `errorPercent` (90) |
 | `ntfy` | `url`, `topic` | `limit` (8), `since` (`24h`) |
 | `adguard` | `url`, `usernameFile`, `passwordFile` | |
+| `openibex` | `url`, `apiTokenFile` | `formWarnBelow` (-30), `monotonyWarnAbove` (2.0) |
 | `http-json` | `url` | `headers`, `bearerTokenFile`, `statusFrom`, `summaryTemplate`, `metrics` |
 | `command` | `command` (argv list) | `parse` (`json`\|`regex`), `regex`, `statusFrom`, `summaryTemplate`, `metrics` |
 | `http-health` | `url` or `address` | `expectStatus` (200) |
@@ -161,6 +162,14 @@ Provider notes:
   `error`.
 - `ntfy` status only reflects reachability; the messages themselves render
   as a feed (priority ≥ 5 red, 4 amber).
+- `openibex` reads an [OpenIbex](https://github.com/notusknot/openibex)
+  instance's read-only HTTP API (`/api/v1`) for a live training-load card:
+  form (TSB), fitness (CTL) with an 84-day sparkline, fatigue (ATL), weekly
+  TSS and a readiness pill. Enable the API in OpenIbex by setting `API_TOKEN`
+  and point `apiTokenFile` at that same token (sent as a bearer header). It's
+  `ok` unless form drops below `formWarnBelow` or monotony exceeds
+  `monotonyWarnAbove` (both → `warn`, the "ease off" nudge); an unreachable
+  instance is `error`.
 
 ## NixOS
 

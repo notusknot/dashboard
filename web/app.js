@@ -54,7 +54,7 @@ function rank(e) {
 
 const TYPE_ICONS = {
   restic: 'shield', syncthing: 'sync', disk: 'hdd', ntfy: 'bell', adguard: 'filter',
-  'http-json': 'globe', 'http-health': 'globe', command: 'terminal',
+  'http-json': 'globe', 'http-health': 'globe', command: 'terminal', openibex: 'activity',
 };
 const iconOf = (e) => '#i-' + (e.icon || TYPE_ICONS[e.type] || 'activity');
 

@@ -93,13 +93,15 @@ func (demoSource) Snapshot() []provider.Entry {
 			},
 			UpdatedAt: ago(8 * time.Second),
 		}, false),
-		e("fitness", "http-json", "Fitness", "health", "activity", 10*time.Minute, provider.Result{
+		e("fitness", "openibex", "OpenIbex", "training load", "activity", 15*time.Minute, provider.Result{
 			Status:  provider.StatusOK,
-			Summary: "resting HR 54 bpm · slept 7h12m",
+			Summary: "form -9 · fitness 62 · moderate",
 			Metrics: map[string]any{
-				"resting hr":     map[string]any{"t": "stat", "value": "54", "unit": "bpm"},
-				"steps · 7 days": map[string]any{"t": "spark", "points": []int{6200, 8100, 7400, 9200, 5300, 10400, 8800}, "value": "8.8k"},
-				"sleep":          "7h 12m",
+				"form":      map[string]any{"t": "stat", "value": "-9", "unit": "TSB"},
+				"fitness":   map[string]any{"t": "spark", "points": []int{41, 43, 44, 46, 48, 49, 51, 53, 55, 57, 58, 60, 61, 62}, "value": "62"},
+				"fatigue":   71,
+				"week TSS":  512,
+				"readiness": map[string]any{"t": "pill", "value": "moderate", "kind": "info"},
 			},
 			UpdatedAt: ago(6 * time.Minute),
 		}, false),

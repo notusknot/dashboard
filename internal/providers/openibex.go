@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"strings"
@@ -52,12 +53,15 @@ func (o *openibex) Poll(ctx context.Context) provider.Result {
 	}
 	hdr := map[string]string{"Authorization": "Bearer " + tok}
 
+	// OpenIbex formats some KPI fields as display strings (monotony is "1.42",
+	// or "—" when it can't be computed yet), so decode every numeric field as a
+	// jsonNum that accepts a number or a numeric string.
 	var sum struct {
-		Fitness   float64 `json:"fitness"` // CTL — chronic (42-day) load
-		Fatigue   float64 `json:"fatigue"` // ATL — acute (7-day) load
-		Form      float64 `json:"form"`    // TSB — CTL minus ATL
-		WeekTss   float64 `json:"weekTss"`
-		Monotony  float64 `json:"monotony"`
+		Fitness   jsonNum `json:"fitness"` // CTL — chronic (42-day) load
+		Fatigue   jsonNum `json:"fatigue"` // ATL — acute (7-day) load
+		Form      jsonNum `json:"form"`    // TSB — CTL minus ATL
+		WeekTss   jsonNum `json:"weekTss"`
+		Monotony  jsonNum `json:"monotony"`
 		Readiness struct {
 			Label string `json:"label"`
 		} `json:"readiness"`
@@ -66,12 +70,12 @@ func (o *openibex) Poll(ctx context.Context) provider.Result {
 		return provider.Errorf("%v", err)
 	}
 
-	ctl, atl, tsb := round(sum.Fitness), round(sum.Fatigue), round(sum.Form)
+	ctl, atl, tsb := round(float64(sum.Fitness)), round(float64(sum.Fatigue)), round(float64(sum.Form))
 	metrics := map[string]any{
 		"form":     map[string]any{"t": "stat", "value": fmt.Sprintf("%+d", tsb), "unit": "TSB"},
 		"fitness":  o.fitnessMetric(ctx, hdr, ctl),
 		"fatigue":  atl,
-		"week TSS": round(sum.WeekTss),
+		"week TSS": round(float64(sum.WeekTss)),
 	}
 	if sum.Readiness.Label != "" {
 		metrics["readiness"] = map[string]any{"t": "pill", "value": sum.Readiness.Label, "kind": readinessKind(sum.Readiness.Label)}
@@ -82,13 +86,14 @@ func (o *openibex) Poll(ctx context.Context) provider.Result {
 	if sum.Readiness.Label != "" {
 		res.Summary += " · " + strings.ToLower(sum.Readiness.Label)
 	}
+	mono := float64(sum.Monotony) // NaN when OpenIbex sent "—" (not yet computable)
 	switch {
-	case sum.Form < o.formWarnBelow:
+	case float64(sum.Form) < o.formWarnBelow:
 		res.Status = provider.StatusWarn
 		res.Summary = fmt.Sprintf("form %+d — high fatigue, ease off", tsb)
-	case o.monotonyWarnAbove > 0 && sum.Monotony > o.monotonyWarnAbove:
+	case o.monotonyWarnAbove > 0 && !math.IsNaN(mono) && mono > o.monotonyWarnAbove:
 		res.Status = provider.StatusWarn
-		res.Summary = fmt.Sprintf("monotony %.1f — vary the training load", sum.Monotony)
+		res.Summary = fmt.Sprintf("monotony %.1f — vary the training load", mono)
 	}
 	return res
 }
@@ -135,4 +140,29 @@ func containsAny(s string, subs ...string) bool {
 	return false
 }
 
-func round(f float64) int { return int(math.Round(f)) }
+func round(f float64) int {
+	if math.IsNaN(f) {
+		return 0
+	}
+	return int(math.Round(f))
+}
+
+// jsonNum decodes a JSON number OR a numeric string ("1.42"). OpenIbex formats
+// some KPI fields as display strings — monotony is "1.42", or "—" when it can't
+// be computed yet (needs ~7 days of variance) — so a plain float64 field would
+// fail to unmarshal. An unparseable value (e.g. "—", null) decodes to NaN;
+// callers treat NaN as "unavailable".
+type jsonNum float64
+
+func (n *jsonNum) UnmarshalJSON(b []byte) error {
+	var v any
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	if f, ok := toFloat(v); ok {
+		*n = jsonNum(f)
+		return nil
+	}
+	*n = jsonNum(math.NaN())
+	return nil
+}
